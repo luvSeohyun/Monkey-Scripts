@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Drink Water
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description  notify drink water, for testing. Default 2 hours mention.
 // @author       luvSeohyun
 // @match        https://*/*
@@ -37,14 +37,16 @@
         setTimeout(mention_set, drinkMention, 'drink water', now);
     }
 
-    let now = new Date();
-    let saved = new Date(GM_getValue('drinkTime', new Date('2020-6-6')));
-    const cross = crossTime(now, saved);
-    if (cross === -1) {
-        mention_set('new day', now, false);
-    } else if(cross >= drinkMention) {
-        mention_set('drink water', now, false);
-    } else {
-        setTimeout(mention_set, drinkMention - cross, 'drink water', now, true);
+    if (location.host.startsWith('www')) {
+        let now = new Date();
+        let saved = new Date(GM_getValue('drinkTime', new Date('2020-6-6')));
+        const cross = crossTime(now, saved);
+        if (cross === -1) {
+            mention_set('new day', now, false);
+        } else if(cross >= drinkMention) {
+            mention_set('drink water', now, false);
+        } else {
+            setTimeout(mention_set, drinkMention - cross, 'drink water', now, true);
+        }
     }
 })();
