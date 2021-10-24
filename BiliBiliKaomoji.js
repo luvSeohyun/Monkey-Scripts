@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         b站直播自定义颜文字输入插件-改版
 // @namespace    http://tampermonkey.net/
-// @version      1.4
-// @description  b站直播自带的颜文字无了･ﾟﾟ･(>д<)･ﾟﾟ･｡ 改版：加个自定义颜表情功能
+// @version      1.5
+// @description  b站直播自带的颜文字无了･ﾟﾟ･(>д<)･ﾟﾟ･｡ 改版：1.加个自定义颜表情功能, 2.按照使用顺序排列表情
 // @author       爱虎虎的小饼干 改版：大梦小贤
 // @match        https://live.bilibili.com/*
 // @icon         http://i2.hdslb.com/bfs/face/e95015d06a56f732fd5d6a33250412f434b3c0f5.jpg@125w_125h.webp
@@ -16,22 +16,25 @@
 
 (function () {
     'use strict';
+    console.log(`version: 2021/10/24`);
     //颜文字列表
-    GM_registerMenuCommand("清空表情", ()=>{GM_deleteValue("kaomoji");});
-    let kaomojiList = GM_getValue("kaomoji");
-    console.log(kaomojiList);
-    if (!kaomojiList) {
-        kaomojiList = [
-            "(⌒▽⌒)", "（￣▽￣）", "(=・ω・=)",
-            "(｀・ω・´)", "(〜￣△￣)〜", "(･∀･)",
-            "(°∀°)ﾉ", "(￣3￣)", "╮(￣▽￣)╭",
-            "_(:3」∠)_", "(^・ω・^ )", "(●￣(ｴ)￣●)",
-            "ε=ε=(ノ≧∇≦)ノ", "⁄(⁄ ⁄•⁄ω⁄•⁄ ⁄)⁄", "←◡←",
-        ];
-        GM_setValue("kaomoji", JSON.stringify(kaomojiList));
+    GM_registerMenuCommand("清空表情", () => { GM_deleteValue("kaomoji"); });
+    let kaomojiObject = GM_getValue("kaomoji");
+    console.log(kaomojiObject ? JSON.parse(kaomojiObject) : "undefined");
+    if (!kaomojiObject) {
+        kaomojiObject = {
+            "(⌒▽⌒)": 0, "（￣▽￣）": 0, "(=・ω・=)": 0,
+            "(｀・ω・´)": 0, "(〜￣△￣)〜": 0, "(･∀･)": 0,
+            "(°∀°)ﾉ": 0, "(￣3￣)": 0, "╮(￣▽￣)╭": 0,
+             "_(:3」∠)_": 0, "(^・ω・^ )": 0,"(●￣(ｴ)￣●)": 0,
+             "ε=ε=(ノ≧∇≦)ノ": 0, "⁄(⁄ ⁄•⁄ω⁄•⁄ ⁄)⁄": 0, "←◡←": 0
+        };
+        GM_setValue("kaomoji", JSON.stringify(kaomojiObject));
     } else {
-        kaomojiList = JSON.parse(kaomojiList);
+        kaomojiObject = JSON.parse(kaomojiObject);
     }
+    let kaomojiList = Object.keys(kaomojiObject);
+    kaomojiList.sort((a,b) => {return kaomojiObject[a] > kaomojiObject[b] ? -1 : 1});
 
     //绘制面板框架
     const kaomojiPanel = $(`<div id="kaomojiPanel" data-v-b505b1e4 data-v-39dcacee
@@ -43,7 +46,7 @@
     </div>`);
 
     //绘制颜文字按钮组件
-    const kaomojiIcon = $(`<span data-`+GM_getValue("data-v")+` title="颜文字面板" id="kaomojiIcon" class="icon-item icon-font icon-pic-biaoqing2-dynamic live-skin-main-text"></span>`);
+    const kaomojiIcon = $(`<span data-` + GM_getValue("data-v") + ` title="颜文字面板" id="kaomojiIcon" class="icon-item icon-font icon-pic-biaoqing2-dynamic live-skin-main-text"></span>`);
 
     //元素定位参数
     const iconPanelStr = ".icon-left-part";
@@ -60,8 +63,8 @@
         var iconPanel = $(iconPanelStr);
         if (iconPanel.length > 0) {
             iconPanel.append(kaomojiIcon);
-            for(var key in iconPanel[0].dataset) {
-                GM_setValue("data-v",key);
+            for (var key in iconPanel[0].dataset) {
+                GM_setValue("data-v", key);
             }
         } else {
             requestAnimationFrame(function () {
@@ -90,11 +93,11 @@
                 kaomojiSpan.mouseup(sendKaomoji);
                 panel.append(kaomojiSpan);
             }
-            try{
+            try {
                 let moreInput = $("<input />").attr("type", "text").attr(`id`, "moreInput").attr(`data-${GM_getValue("data-v")}`, "");
                 moreInput.keydown(addKaomoji);
                 panel.append(moreInput);
-            }catch(e){
+            } catch (e) {
                 console.log("error-------");
                 console.log(e);
             }
@@ -130,7 +133,7 @@
             icon.mouseleave(setTimer);
             panel.mouseenter(clearTimer);
             panel.mouseleave(setTimer);
-            panel.bind("contextmenu",()=>{return false});
+            panel.bind("contextmenu", () => { return false });
         } else {
             requestAnimationFrame(function () {
                 setKaomojiBtn();
@@ -143,14 +146,14 @@
         let text = $(this).val();
         if (event.key === "Enter") {
             console.log(`keydown ${event.key} ${text}`);
-            if (kaomojiList.indexOf(text) === -1){
+            if (kaomojiList.indexOf(text) === -1) {
                 var panel = $(moreInput);
                 var kaomojiSpan = $("<span></span>").attr("class", "list-content-candidate dp-i-block").attr(`data-v-14d43f2e`, "").text(text);
                 kaomojiSpan.click(inputToText);
                 kaomojiSpan.mouseup(sendKaomoji);
                 panel.before(kaomojiSpan);
-                kaomojiList.push(text);
-                GM_setValue("kaomoji", JSON.stringify(kaomojiList));
+                kaomojiObject[text] = 0;
+                GM_setValue("kaomoji", JSON.stringify(kaomojiObject));
             }
             $(this).val("");
         }
@@ -159,18 +162,30 @@
     //给颜文字添加点击事件
     function inputToText() {
         var text = $(this).text();
+        //更新使用表情的次数
+        console.log(`left click ${text}, now add`);
+        if (kaomojiList.indexOf(text) !== -1) {
+            kaomojiObject[text] += 1;
+            GM_setValue("kaomoji", JSON.stringify(kaomojiObject));
+        }
         var textarea = $(textareaStr);
         var con = textarea.val();
         var pos = getCursortPosition(textarea[0]);
-        textarea.val(con.substr(0,pos) + text + con.substr(pos));
-        setCaretPosition(textarea[0],pos+text.length);
+        textarea.val(con.substr(0, pos) + text + con.substr(pos));
+        setCaretPosition(textarea[0], pos + text.length);
         textarea[0].dispatchEvent(new Event('input', { "bubbles": true, "cancelable": true }));
     }
 
     //右键直接发送表情
     function sendKaomoji(e) {
-        if(e.which == 3) {
+        if (e.which == 3) {
             var text = $(this).text();
+            //更新使用表情的次数
+            if (kaomojiList.indexOf(text) !== -1) {
+                console.log(`right click ${text}, now add`);
+                kaomojiObject[text] += 1;
+                GM_setValue("kaomoji", JSON.stringify(kaomojiObject));
+            }
             var textarea = $(textareaStr);
             var con = textarea.val();
             textarea.val(text);
@@ -183,12 +198,12 @@
         }
     }
     //获取光标位置函数
-    function getCursortPosition (ctrl) {
+    function getCursortPosition(ctrl) {
         var CaretPos = 0;	// IE Support
         if (document.selection) {
-            ctrl.focus ();
-            var Sel = document.selection.createRange ();
-            Sel.moveStart ('character', -ctrl.value.length);
+            ctrl.focus();
+            var Sel = document.selection.createRange();
+            Sel.moveStart('character', -ctrl.value.length);
             CaretPos = Sel.text.length;
         }
         // Firefox support
@@ -197,11 +212,10 @@
         return (CaretPos);
     }
     //设置光标位置函数
-    function setCaretPosition(ctrl, pos){
-        if(ctrl.setSelectionRange)
-        {
+    function setCaretPosition(ctrl, pos) {
+        if (ctrl.setSelectionRange) {
             ctrl.focus();
-            ctrl.setSelectionRange(pos,pos);
+            ctrl.setSelectionRange(pos, pos);
         }
         else if (ctrl.createTextRange) {
             var range = ctrl.createTextRange();
